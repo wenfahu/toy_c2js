@@ -1,0 +1,50 @@
+program -> includeList declarationList | declarationList
+includeList -> includeList include | include
+decleartionList -> varDeclaration | funcDeclaration
+
+include -> '#include <' ID '>'
+
+varDeclaration -> typeSpecifier varDeclId;
+varDeclId -> ID | ID[NUMCONST]
+typeSpecifier -> int | bool | char
+
+funcDeclaration -> typeSpecifier ID (params) statement
+params -> paramList | epsilon
+paramList -> paramList, paramTypeList | paramTypeList
+paramTypeList -> typeSpecifier paramId
+paramId -> ID | ID[]
+
+statement -> expressionStmt | compoundStmt | selectionStmt | iterationStmt | returnStmt | breakStmt | getsStatement | putsStatement | lensStatement
+
+getsStatement -> 'gets('ID');'
+putsStatement -> 'puts('STRINGCONST');'
+lensStatement -> 'strlen('ID');'
+
+compoundStmt -> {localDeclarations statementList}
+localDeclarations -> localDeclarations varDeclaration | epsilon
+statementList -> statementList statement | epsilon
+expressionStmt -> expression; | ;
+selectionStmt -> if (simpleExpression) statement | if (simpleExpression) statement else statement
+iterationStmt -> while (simpleExpression) statement | for (statementList) statement
+returnStmt -> return; | return expression;
+breakStmt -> break;
+
+expression -> mutable = expression | mutable += expression | mutable -= expression | mutable *= expression | mutable /= expression | mutable ++ | mutable -- | simpleExpression
+simpleExpression -> simpleExpression '|' andExpression | andExpression
+andExpression -> andExpression & unaryRelExpression | unaryRelExpression
+unaryRelExpression -> ! unaryRelExpression | relExpression
+relExpression -> sumExpression relop sumExpression | sumExpression
+relop -> <= | < | > | >= | == | !=
+sumExpression -> sumExpression sumop term | term
+sumop -> + | -
+term -> term mulop unaryExpression | unaryExpression
+mulop -> * | / | %
+unaryExpression -> unaryop unaryExpression | factor
+unaryop -> - | * | ?
+factor -> immutable | mutable
+mutable -> ID | ID [expression]
+immutable -> (expression) | call | constant
+call -> ID (args)
+args -> argList | epsilon
+aryList -> argList, expression | expression
+constant -> NUMCONST | CHARCONST | STRINGCONST | true | false

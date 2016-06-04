@@ -20,6 +20,7 @@
 "gets"                      return 'gets'
 "puts"                      return 'puts'
 "strlen"                    return 'strlen'
+"main"                      return 'main'
 [a-zA-Z]?\"(\\.|[^\\"])*\"  return 'STRINGCONST'
 [a-zA-Z]+"."h               return 'INCLUDESTRING'
 [a-zA-Z]+                   return 'ID'
@@ -67,7 +68,7 @@
 p
     : program EOF
         { var fs = require('fs');
-          fs.writeFile('out.js', $1 + "main();");
+          fs.writeFile('out.js', $1 );
 		  var beautify = require('js-beautify').js_beautify;
 		  fs.readFile('out.js', 'utf8', function(err, data){
 		  	if(err) throw err;
@@ -136,6 +137,8 @@ varDeclId
 funcDecl
     : type ID '(' params ')' statement
         { $$ = "function " + $2 + "(" + $4 + ")" + $6; }
+	| type main '(' ')' statement
+		{ $$ = "(function(){" + $5 + "}())" ; }
     ;
 
 params

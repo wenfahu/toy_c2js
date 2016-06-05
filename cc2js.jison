@@ -5,28 +5,39 @@
 \r+                         /* skip linebreak */
 \n+                         /* skip linebreak */
 [0-9]+("."[0-9]+)?\b        return 'NUMCONST'
+"using namespace std;"      return 'usingnamespacestd;'
 "true"                      return 'true'
 "false"                     return 'false'
 "if"                        return 'if'
 "else"                      return 'else'
+"switch"                    return 'switch'
+"case"                      return 'case'
+"default"                   return 'default'
 "while"                     return 'while'
 "for"                       return 'for'
 "break"                     return 'break'
 "return"                    return 'return'
 "int"                       return 'int'
+"float"                     return 'float'
 "char*"                     return 'char*'
 "char"                      return 'char'
 "bool"                      return 'bool'
 "gets"                      return 'gets'
 "puts"                      return 'puts'
 "strlen"                    return 'strlen'
-"printf"                    return "printf"
+"printf"                    return 'printf'
 "main"                      return 'main'
+"void"                      return 'void'
+"string"                    return 'string'
+"push"                      return 'push'
+"pop"                       return 'pop'
+"top"                       return 'top'
 [a-zA-Z]?\"(\\.|[^\\"])*\"  return 'STRINGCONST'
-[a-zA-Z]+"."h               return 'INCLUDESTRING'
+"<"[a-zA-Z]+("."h)?">"      return 'INCLUDESTRING'
 [a-zA-Z]+                   return 'ID'
-[a-zA-Z]                    return 'CHARCONST'
+[a-zA-Z]?\'(\\.|[^\\'])*\'  return 'CHARCONST'
 \"                          return '"'
+"."                         return '.'
 "+="                        return '+='
 "-="                        return '-='
 "*="                        return '*='
@@ -54,12 +65,13 @@
 "%"                         return '%'
 "("                         return '('
 ")"                         return ')'
+"||"                        return '||'
+"&&"                        return '&&'
 "|"                         return '|'
 "?"                         return '?'
-"&&"                        return '&&'
-"||"                        return '||'
 "!"                         return '!'
-"#include <"                return '#include<'
+":"                         return ':'
+"#include"                  return '#include'
 ">"                         return '>'
 <<EOF>>                     return 'EOF'
 .                           return 'INVALID'
@@ -72,14 +84,11 @@
 p
     : program EOF
         { var fs = require('fs');
-          fs.writeFile('out.js', $1 );
-		  var beautify = require('js-beautify').js_beautify;
-		  fs.readFile('out.js', 'utf8', function(err, data){
-		  	if(err) throw err;
-			fs.writeFile('out.js', beautify(data));
-		  });
-          typeof console !== 'undefined' ? console.log($1) : print($1);
-          return $1; }
+          var beautify = require('js-beautify').js_beautify;
+          var out = beautify($1);
+          fs.writeFile('out.js', out);
+          typeof console !== 'undefined' ? console.log(out) : print(out);
+          return out; }
     ;
 
 program
@@ -97,7 +106,9 @@ incList
     ;
 
 include
-    : '#include<' INCLUDESTRING '>'
+    : '#include' INCLUDESTRING
+        { $$ = ""; }
+    | 'usingnamespacestd;'
         { $$ = ""; }
     ;
 
@@ -118,6 +129,10 @@ decl
 varDecl
     : type varDeclId ';'
         { $$ = "var " + $2 + ";"; }
+    | type ID '=' immutable ';'
+        { $$ = "var " + $2 + "=" + $4 + ";"; }
+    | type ID '[' NUMCONST ']' '=' immutable ';'
+        { $$ = "var " + $2 + "=" + $7 + ';'; }
     ;
 
 type
@@ -129,6 +144,12 @@ type
         { $$ = "bool"; }
     | 'char*'
         { $$ = "char*"; }
+    | 'void'
+        { $$ = "void"; }
+    | 'string'
+        { $$ = "string"; }
+    | 'float'
+        { $$ = "float"; }
     ;
 
 varDeclId
@@ -141,8 +162,8 @@ varDeclId
 funcDecl
     : type ID '(' params ')' statement
         { $$ = "function " + $2 + "(" + $4 + ")" + $6; }
-	| type main '(' ')' statement
-		{ $$ = "(function(){" + $5 + "}())" ; }
+    | type main '(' ')' statement
+        { $$ = "(function(){" + $5 + "}())" ; }
     ;
 
 params
@@ -182,6 +203,8 @@ statement
         { $$ = $1; }
     | breakStmt
         { $$ = $1; }
+    | labeledStmt
+        { $$ = $1; }
     ;
 
 getsStmt
@@ -190,14 +213,14 @@ getsStmt
     ;
 
 putsStmt
-    : 'puts' '(' STRINGCONST ')'
+    : 'puts' '(' immutable ')'
         { $$ = "console.log(" + $3 + ")" }
     ;
 
 printStmt 
-	: 'printf' '(' args ')'
-		{ $$ = "console.log(" + $3 + ")" }
-	;
+    : 'printf' '(' args ')'
+        { $$ = "console.log(" + $3 + ")" }
+    ;
 
 lensStmt
     : 'strlen' '(' ID ')'
@@ -223,6 +246,13 @@ stmtList
         { $$ = ""; }
     ;
 
+labeledStmt
+    : 'case' expression ':' statement
+        { $$ = "case " + $2 + ":" + $4; }
+    | 'default' ':' statement
+        { $$ = "default" + ":" + $3; }
+    ;
+
 expressionStmt
     : expression ';'
         { $$ = $1 + ";"; }
@@ -231,8 +261,12 @@ expressionStmt
     ;
 
 selectionStmt
-    : 'if' '(' simpleExpression ')' statement 'else' statement
+    : 'if' '(' simpleExpression ')' compoundStmt 'else' compoundStmt
         { $$ = "if(" + $3 + ")" + $5 + "else" + $7; }
+    | 'if' '(' simpleExpression ')' compoundStmt
+        { $$ = "if(" + $3 + ")" + $5; }
+    | 'switch' '(' expression ')' compoundStmt
+        { $$ = "switch(" + $3 +")" + $5; }
     ;
 
 iterationStmt
@@ -267,6 +301,8 @@ expression
         { $$ = $1 + "/=" + $3; }
     | mutable '++'
         { $$ = $1 + "++"; }
+    | '++' mutable
+        { $$ = "++" + $2; }
     | mutable '--'
         { $$ = $1 + "--"; }
     | simpleExpression
@@ -392,8 +428,8 @@ call
         { $$ = $1; }
     | putsStmt
         { $$ = $1; }
-	| printStmt 
-		{ $$ = $1; }
+    | printStmt 
+        { $$ = $1; }
     | getsStmt
         { $$ = $1; }
     ;

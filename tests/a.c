@@ -15,8 +15,6 @@ int pal(char* st)
 		{
 			ret = 0;
 		}
-		else {
-		}
 	}
 
 	return ret;

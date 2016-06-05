@@ -20,6 +20,7 @@
 "gets"                      return 'gets'
 "puts"                      return 'puts'
 "strlen"                    return 'strlen'
+"printf"                    return "printf"
 "main"                      return 'main'
 [a-zA-Z]?\"(\\.|[^\\"])*\"  return 'STRINGCONST'
 [a-zA-Z]+"."h               return 'INCLUDESTRING'
@@ -55,6 +56,9 @@
 ")"                         return ')'
 "|"                         return '|'
 "?"                         return '?'
+"&&"                        return '&&'
+"||"                        return '||'
+"!"                         return '!'
 "#include <"                return '#include<'
 ">"                         return '>'
 <<EOF>>                     return 'EOF'
@@ -150,7 +154,7 @@ params
 
 paramList
     : paramList ',' paramTypeList
-        { $$ = $1 + ", " + $2; }
+        { $$ = $1 + ", " + $3; }
     | paramTypeList
         { $$ = $1; }
     ;
@@ -189,6 +193,11 @@ putsStmt
     : 'puts' '(' STRINGCONST ')'
         { $$ = "console.log(" + $3 + ")" }
     ;
+
+printStmt 
+	: 'printf' '(' args ')'
+		{ $$ = "console.log(" + $3 + ")" }
+	;
 
 lensStmt
     : 'strlen' '(' ID ')'
@@ -265,15 +274,15 @@ expression
     ;
 
 simpleExpression
-    : simpleExpression '|' andExpression
-        { $$ = $1 + "|" + $3; }
+    : simpleExpression '||' andExpression
+        { $$ = $1 + "||" + $3; }
     | andExpression
         { $$ = $1; }
     ;
 
 andExpression
-    : andExpression '&' unaryRelExpression
-        { $$ = $1 + "&" + $3; }
+    : andExpression '&&' unaryRelExpression
+        { $$ = $1 + "&&" + $3; }
     | unaryRelExpression
         { $$ = $1; }
     ;
@@ -383,6 +392,8 @@ call
         { $$ = $1; }
     | putsStmt
         { $$ = $1; }
+	| printStmt 
+		{ $$ = $1; }
     | getsStmt
         { $$ = $1; }
     ;

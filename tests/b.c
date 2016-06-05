@@ -42,12 +42,12 @@ void kmp(char* text, char* pattern)
 		if (p == m-1)
 		{
 			ans ++;
-			printf("%d ", i - p + 1);
+			printf("%d ", i - p );
 			p = next[p];
 		}
 	}
 	
-	if (ans == 0){
+	if (ans == 0 && m > 0){
 		puts("False");
 	}
 }
